@@ -75,6 +75,10 @@ def fetch_maibachl_status():
 
 
 def main():
+
+    # ⭐ TESTNACHRICHT – wird IMMER gesendet 
+    send_push_notification("Testnachricht", "Der Scraper funktioniert!")
+    
     try:
         status = fetch_maibachl_status()
         print("Status:", status)
@@ -96,3 +100,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

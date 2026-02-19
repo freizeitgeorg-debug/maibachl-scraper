@@ -6,7 +6,7 @@ import time
 # KONFIGURATION
 # -----------------------------------------
 
-SENDGRID_API_KEY = ""
+SENDGRID_API_KEY = SENDGRID_KEY
 EMAIL_FROM = "em1556.georgsu55@sendgrid.at"
 EMAIL_TO = "freizeitgeorg@gmail.com"
 
@@ -95,5 +95,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 

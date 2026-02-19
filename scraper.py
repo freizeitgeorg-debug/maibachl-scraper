@@ -5,6 +5,31 @@ from bs4 import BeautifulSoup
 import smtplib
 from email.mime.text import MIMEText
 
+
+
+
+def check_secrets():
+    required = ["EMAIL_USER", "EMAIL_PASS", "EMAIL_TO"]
+    missing = []
+
+    for key in required:
+        value = os.getenv(key)
+        if value is None or value.strip() == "":
+            missing.append(key)
+
+    if missing:
+        print("❌ FEHLENDE SECRETS:", ", ".join(missing))
+        raise SystemExit("Abbruch: Secrets fehlen oder sind leer.")
+    else:
+        print("✅ Alle Secrets vorhanden.")
+
+# Direkt nach den Imports aufrufen:
+check_secrets()
+
+
+
+
+
 URL = "https://hydrographie.ktn.gv.at/grundwasser_quellen/quellen"
 MAX_RETRIES = 5
 RETRY_DELAY = 5  # Sekunden
@@ -77,3 +102,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

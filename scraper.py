@@ -1,54 +1,77 @@
 import requests
+import os
 from bs4 import BeautifulSoup
 import json
 
 URL = "https://hydrographie.ktn.gv.at/grundwasser_quellen/quellen"
-FCM_URL = "https://fcm.googleapis.com/fcm/send"
+FIREBASE_KEY = os.getenv("FIREBASE_SERVER_KEY")
 
-SERVER_KEY = "DEIN_FIREBASE_SERVER_KEY"
-DEVICE_TOKEN = "DEIN_DEVICE_TOKEN"
+def send_push_notification(title, body):
+    if not FIREBASE_KEY:
+        print("Fehler: FIREBASE_SERVER_KEY nicht gesetzt.")
+        return
 
-def get_maibachl_status():
-    response = requests.get(URL, timeout=10)
-    response.raise_for_status()
-
-    soup = BeautifulSoup(response.text, "html.parser")
-    rows = soup.find_all("tr")
-
-    for row in rows:
-        cols = [c.get_text(strip=True) for c in row.find_all("td")]
-        if len(cols) >= 3 and cols[0].lower() == "maibachl":
-            value = float(cols[1].replace(",", "."))
-            timestamp = cols[2]
-            return value > 0, value, timestamp
-
-    return None, None, None
-
-
-def send_push(title, body):
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"key={SERVER_KEY}"
+        "Authorization": f"key={FIREBASE_KEY}"
     }
 
-    payload = {
-        "to": DEVICE_TOKEN,
+    data = {
+        "to": "/topics/maibachl",
         "notification": {
             "title": title,
             "body": body
         }
     }
 
-    r = requests.post(FCM_URL, headers=headers, data=json.dumps(payload))
-    print("FCM Response:", r.text)
+    response = requests.post(
+        "https://fcm.googleapis.com/fcm/send",
+        headers=headers,
+        data=json.dumps(data)
+    )
+
+    print("Push-Response:", response.text)
+
+
+def fetch_maibachl_status():
+    response = requests.get(URL, timeout=10)
+    response.raise_for_status()
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Finde die Tabellenzeile, die "Maibachl" enthält
+    row = soup.find("tr", string=lambda t: t and "Maibachl" in t)
+
+    if not row:
+        raise ValueError("Maibachl nicht in der Tabelle gefunden.")
+
+    # Alle Zellen der Zeile
+    cells = row.find_all("td")
+    if len(cells) < 2:
+        raise ValueError("Unerwartetes Tabellenformat.")
+
+    # Status steht üblicherweise in der zweiten Spalte
+    status_text = cells[1].get_text(strip=True)
+    return status_text
+
+
+def main():
+    try:
+        status = fetch_maibachl_status()
+        print("Status:", status)
+
+        if "führt" in status.lower() or "wasser" in status.lower():
+            send_push_notification(
+                "Maibachl führt Wasser!",
+                f"Aktueller Status: {status}"
+            )
+        else:
+            print("Maibachl führt kein Wasser.")
+
+    except Exception as e:
+        print("Fehler im Scraper:", e)
+        raise
 
 
 if __name__ == "__main__":
-    status, value, timestamp = get_maibachl_status()
-
-    if status is None:
-        print("⚠️ Fehler: Maibachl nicht gefunden")
-    elif status:
-        send_push("Maibachl rinnt!", f"{value} l/s – Stand {timestamp}")
-    else:
-        send_push("Maibachl rinnt NICHT", f"{value} l/s – Stand {timestamp}")
+    main()

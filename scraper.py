@@ -1,51 +1,29 @@
-import os
-import json
-import time
 import requests
+import os
+import time
 from bs4 import BeautifulSoup
-from google.oauth2 import service_account
-from google.auth.transport.requests import Request
+import smtplib
+from email.mime.text import MIMEText
 
 URL = "https://hydrographie.ktn.gv.at/grundwasser_quellen/quellen"
-SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
-FIREBASE_PROJECT_ID = "maibachlapp"  # Dein Firebase-Projektname
-SERVICE_ACCOUNT_JSON = os.getenv("FIREBASE_SERVICE_ACCOUNT")
-
 MAX_RETRIES = 5
-RETRY_DELAY = 5
+RETRY_DELAY = 5  # Sekunden
 
+def send_email(subject, body):
+    sender = os.getenv("EMAIL_USER")
+    password = os.getenv("EMAIL_PASS")
+    recipient = os.getenv("EMAIL_TO")
 
-def get_access_token():
-    info = json.loads(SERVICE_ACCOUNT_JSON)
-    credentials = service_account.Credentials.from_service_account_info(
-        info, scopes=SCOPES
-    )
-    credentials.refresh(Request())
-    return credentials.token
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = recipient
 
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender, password)
+        server.sendmail(sender, recipient, msg.as_string())
 
-def send_push_notification(title, body):
-    token = get_access_token()
-
-    url = f"https://fcm.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/messages:send"
-
-    message = {
-        "message": {
-            "topic": "maibachl",
-            "notification": {
-                "title": title,
-                "body": body
-            }
-        }
-    }
-
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json; UTF-8",
-    }
-
-    response = requests.post(url, headers=headers, json=message)
-    print("Push-Response:", response.text)
+    print("E-Mail gesendet:", subject)
 
 
 def fetch_page_with_retry():
@@ -55,6 +33,7 @@ def fetch_page_with_retry():
             response = requests.get(URL, timeout=20)
             response.raise_for_status()
             return response.text
+
         except Exception as e:
             print(f"Fehler beim Abrufen: {e}")
             if attempt < MAX_RETRIES:
@@ -83,15 +62,15 @@ def fetch_maibachl_status(html):
 
 
 def main():
-    # Testnachricht – garantiert, dass Push funktioniert
-    send_push_notification("Testnachricht", "HTTP v1 funktioniert!")
+    # Test-E-Mail – wird bei jedem Lauf gesendet
+    send_email("Testnachricht", "Der Maibachl-Scraper läuft!")
 
     html = fetch_page_with_retry()
     status = fetch_maibachl_status(html)
     print("Status:", status)
 
     if "führt" in status.lower() or "wasser" in status.lower():
-        send_push_notification("Maibachl führt Wasser!", f"Aktueller Status: {status}")
+        send_email("Maibachl führt Wasser!", f"Aktueller Status: {status}")
     else:
         print("Maibachl führt kein Wasser.")
 

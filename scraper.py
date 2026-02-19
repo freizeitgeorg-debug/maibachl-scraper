@@ -1,55 +1,48 @@
 import requests
-import os
-import time
 from bs4 import BeautifulSoup
-import smtplib
-from email.mime.text import MIMEText
+import time
 
+# -----------------------------------------
+# KONFIGURATION
+# -----------------------------------------
 
-
-
-def check_secrets():
-    required = ["EMAIL_USER", "EMAIL_PASS", "EMAIL_TO"]
-    missing = []
-
-    for key in required:
-        value = os.getenv(key)
-        if value is None or value.strip() == "":
-            missing.append(key)
-
-    if missing:
-        print("❌ FEHLENDE SECRETS:", ", ".join(missing))
-        raise SystemExit("Abbruch: Secrets fehlen oder sind leer.")
-    else:
-        print("✅ Alle Secrets vorhanden.")
-
-# Direkt nach den Imports aufrufen:
-check_secrets()
-
-
-
-
+SENDGRID_API_KEY = "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"
+EMAIL_FROM = "deine@mail.at"
+EMAIL_TO = "freizeitgeorg@gmail.com"
 
 URL = "https://hydrographie.ktn.gv.at/grundwasser_quellen/quellen"
 MAX_RETRIES = 5
-RETRY_DELAY = 5  # Sekunden
+RETRY_DELAY = 15  # Sekunden
+
+# -----------------------------------------
+# SENDGRID E-MAIL FUNKTION
+# -----------------------------------------
 
 def send_email(subject, body):
-    sender = os.getenv("EMAIL_USER")
-    password = os.getenv("EMAIL_PASS")
-    recipient = os.getenv("EMAIL_TO")
+    url = "https://api.sendgrid.com/v3/mail/send"
+    headers = {
+        "Authorization": f"Bearer {SENDGRID_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "personalizations": [{
+            "to": [{"email": EMAIL_TO}]
+        }],
+        "from": {"email": EMAIL_FROM},
+        "subject": subject,
+        "content": [{
+            "type": "text/plain",
+            "value": body
+        }]
+    }
 
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = sender
-    msg["To"] = recipient
+    response = requests.post(url, headers=headers, json=data)
+    print("SendGrid Response:", response.status_code, response.text)
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(sender, password)
-        server.sendmail(sender, recipient, msg.as_string())
 
-    print("E-Mail gesendet:", subject)
-
+# -----------------------------------------
+# MAIBACHL SCRAPER
+# -----------------------------------------
 
 def fetch_page_with_retry():
     for attempt in range(1, MAX_RETRIES + 1):
@@ -87,7 +80,7 @@ def fetch_maibachl_status(html):
 
 
 def main():
-    # Test-E-Mail – wird bei jedem Lauf gesendet
+    # Test-E-Mail bei jedem Lauf
     send_email("Testnachricht", "Der Maibachl-Scraper läuft!")
 
     html = fetch_page_with_retry()
@@ -102,4 +95,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

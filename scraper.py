@@ -1,13 +1,12 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-import time
 
 URL = "https://hydrographie.ktn.gv.at/grundwasser_quellen/quellen"
 FCM_URL = "https://fcm.googleapis.com/fcm/send"
 
-SERVER_KEY = "HIER_DEIN_FIREBASE_SERVER_KEY"
-DEVICE_TOKEN = "HIER_DEIN_DEVICE_TOKEN"
+SERVER_KEY = "DEIN_FIREBASE_SERVER_KEY"
+DEVICE_TOKEN = "DEIN_DEVICE_TOKEN"
 
 def get_maibachl_status():
     response = requests.get(URL, timeout=10)
@@ -44,22 +43,12 @@ def send_push(title, body):
     print("FCM Response:", r.text)
 
 
-def loop():
-    last_status = None
-
-    while True:
-        status, value, timestamp = get_maibachl_status()
-
-        if status is not None and status != last_status:
-            if status:
-                send_push("Maibachl rinnt!", f"{value} l/s – Stand {timestamp}")
-            else:
-                send_push("Maibachl rinnt NICHT", f"{value} l/s – Stand {timestamp}")
-
-            last_status = status
-
-        time.sleep(3600)  # alle 60 Minuten prüfen
-
-
 if __name__ == "__main__":
-    loop()
+    status, value, timestamp = get_maibachl_status()
+
+    if status is None:
+        print("⚠️ Fehler: Maibachl nicht gefunden")
+    elif status:
+        send_push("Maibachl rinnt!", f"{value} l/s – Stand {timestamp}")
+    else:
+        send_push("Maibachl rinnt NICHT", f"{value} l/s – Stand {timestamp}")

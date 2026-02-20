@@ -1,16 +1,23 @@
 import requests
 from bs4 import BeautifulSoup
 import time
+import os
 
 # -----------------------------------------
 # KONFIGURATION
 # -----------------------------------------
 
-import os
-
 EMAIL_FROM = os.getenv("EMAIL_USER")
 SENDGRID_API_KEY = os.getenv("EMAIL_PASS")
-EMAIL_TO   = os.getenv("EMAIL_TO")
+EMAIL_TO = os.getenv("EMAIL_TO")
+RUN_MODE = os.getenv("GITHUB_EVENT_NAME", "")
+
+# Prüfung ob die Varaiablen ausgelesen wurden:
+# Debug-Ausgabe (nur ob gesetzt, niemals Werte!)
+print("EMAIL_FROM gesetzt:", EMAIL_FROM is not None)
+print("SENDGRID_API_KEY gesetzt:", SENDGRID_API_KEY is not None)
+print("EMAIL_TO gesetzt:", EMAIL_TO is not None)
+print("RUN_MODE:", RUN_MODE)
 
 # SENDGRID_API_KEY = os.getenv("SENDGRID_KEY")
 # SENDGRID_API_KEY = SENDGRID_KEY
@@ -85,10 +92,13 @@ def fetch_maibachl_status(html):
 
     return cells[1].get_text(strip=True)
 
-
 def main():
+    # Nur Test-E-Mail bei manuellem Start
+    if RUN_MODE == "workflow_dispatch":
+        send_email("Testnachricht", "Der Maibachl-Scraper läuft!")
+
     # Test-E-Mail bei jedem Lauf
-    send_email("Testnachricht", "Der Maibachl-Scraper läuft!")
+    # send_email("Testnachricht", "Der Maibachl-Scraper läuft!")
 
     html = fetch_page_with_retry()
     status = fetch_maibachl_status(html)
@@ -102,3 +112,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

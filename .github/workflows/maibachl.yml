@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: "0 9 * * *"
     - cron: "0 15 * * *"
+    # startet die Prozedur um 9:00 und um 15:00 Uhr
   workflow_dispatch:
 
 jobs:
@@ -17,16 +18,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
-      - name: Run scraper
+      - name: Run scraper with secrets
         env:
-                 SENDGRID_KEY: ${{ vars.SENDGRID_KEY }}
-
-          #  FIREBASE_SERVER_KEY: ${{ secrets.FIREBASE_SERVER_KEY }}
-        run: |
-          python scraper.py
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_TO:   ${{ secrets.EMAIL_TO }}
+        run: python scraper.py

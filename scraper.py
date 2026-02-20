@@ -6,14 +6,16 @@ import time
 # KONFIGURATION
 # -----------------------------------------
 
-import os 
+import os
 
-SENDGRID_API_KEY = os.getenv("SENDGRID_KEY")
+EMAIL_FROM = os.getenv("EMAIL_USER")
+SENDGRID_API_KEY = os.getenv("EMAIL_PASS")
+EMAIL_TO   = os.getenv("EMAIL_TO")
 
-
+# SENDGRID_API_KEY = os.getenv("SENDGRID_KEY")
 # SENDGRID_API_KEY = SENDGRID_KEY
-EMAIL_FROM = "em1556.georgsu55@sendgrid.at"
-EMAIL_TO = "freizeitgeorg@gmail.com"
+# EMAIL_FROM = "em1556.georgsu55@sendgrid.at"
+# EMAIL_TO = "freizeitgeorg@gmail.com"
 
 URL = "https://hydrographie.ktn.gv.at/grundwasser_quellen/quellen"
 MAX_RETRIES = 5
@@ -100,7 +102,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
